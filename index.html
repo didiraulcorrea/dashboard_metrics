@@ -96,14 +96,14 @@
   }
 
   tbody tr {
-    transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  }
-  
-  tbody tr:hover {
-    background: #FFF7E6 !important;
-    box-shadow: inset 4px 0 0 #F79009;
-    cursor: pointer;
-  }
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+tbody tr:hover {
+  background: #FFF7E6 !important;
+  box-shadow: inset 4px 0 0 #F79009;
+  cursor: pointer;
+}
 
   .city {
     text-align: left;
@@ -297,6 +297,26 @@
     return `${month}-${day} ${hour}hrs`;
   }
 
+  function getCutoffLabelFromRows(rows) {
+    const rowWithCutoff = rows.find(row =>
+        row.cutoff_mx_label &&
+        String(row.cutoff_mx_label).trim() !== ""
+    );
+
+    if (rowWithCutoff) {
+        return String(rowWithCutoff.cutoff_mx_label).trim();
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const cutoffFromUrl = params.get("cutoff");
+
+    if (cutoffFromUrl) {
+        return cutoffFromUrl;
+    }
+
+    return "Unknown cutoff";
+    }
+
   // ============================================================
   // DATA PROCESSING
   // ============================================================
@@ -320,7 +340,10 @@
           avg_ceta_time: toNumber(row.avg_ceta_time),
           paid_orders_num: toNumber(row.paid_orders_num),
           completed_orders_num: toNumber(row.completed_orders_num),
-          countryId: row.countryId ?? ""
+          countryId: row.countryId ?? "",
+
+          cutoff_mx_label: row.cutoff_mx_label ?? "",
+          cutoff_mx_datetime: row.cutoff_mx_datetime ?? ""
         };
       });
   }
@@ -510,9 +533,10 @@
     const total = buildMxTotal(rows, currentDate, lastWeekDate);
 
     return {
-      currentDate,
-      lastWeekDate,
-      rows: [total, ...cityMetrics]
+        currentDate,
+        lastWeekDate,
+        cutoffLabel: getCutoffLabelFromRows(rows),
+        rows: [total, ...cityMetrics]
     };
   }
 
@@ -596,7 +620,7 @@
 
     const currentLabel = formatDateLabel(scorecard.currentDate);
     const lastWeekLabel = formatDateLabel(scorecard.lastWeekDate);
-    const cutoffLabel = formatCutoffMexico();
+    const cutoffLabel = scorecard.cutoffLabel;
 
     document.getElementById("title").textContent = `City Current Status | Cutoff MX: ${cutoffLabel}`;
     document.getElementById("subtitle").textContent =
