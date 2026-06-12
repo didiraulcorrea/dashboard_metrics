@@ -95,6 +95,20 @@
     background: var(--row-alt);
   }
 
+  tbody tr {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  
+  tbody tr:hover {
+    background: #FFF7E6 !important;
+    box-shadow: inset 4px 0 0 #F79009;
+    cursor: pointer;
+  }
+  
+  tbody tr:hover td {
+    font-weight: 700;
+  }
+
   .city {
     text-align: left;
     font-weight: 500;
