@@ -297,25 +297,40 @@ tbody tr:hover {
     return `${month}-${day} ${hour}hrs`;
   }
 
-  function getCutoffLabelFromRows(rows) {
-    const rowWithCutoff = rows.find(row =>
-        row.cutoff_mx_label &&
-        String(row.cutoff_mx_label).trim() !== ""
+  function getCountryLabelFromRows(rows) {
+    const rowWithCountry = rows.find(row =>
+      row.countryId &&
+      String(row.countryId).trim() !== ""
     );
 
+    if (rowWithCountry) {
+      return String(rowWithCountry.countryId).trim().toUpperCase();
+    }
+
+    return "UNKNOWN";
+  }
+
+  function getCutoffLabelFromRows(rows) {
+    // Current CSV versions use cutoff_label.
+    // Older CSV versions used cutoff_mx_label.
+    const rowWithCutoff = rows.find(row => {
+      const cutoffLabel = row.cutoff_label ?? row.cutoff_mx_label;
+      return cutoffLabel && String(cutoffLabel).trim() !== "";
+    });
+
     if (rowWithCutoff) {
-        return String(rowWithCutoff.cutoff_mx_label).trim();
+      return String(rowWithCutoff.cutoff_label ?? rowWithCutoff.cutoff_mx_label).trim();
     }
 
     const params = new URLSearchParams(window.location.search);
     const cutoffFromUrl = params.get("cutoff");
 
     if (cutoffFromUrl) {
-        return cutoffFromUrl;
+      return cutoffFromUrl;
     }
 
     return "Unknown cutoff";
-    }
+  }
 
   // ============================================================
   // DATA PROCESSING
@@ -342,6 +357,7 @@ tbody tr:hover {
           completed_orders_num: toNumber(row.completed_orders_num),
           countryId: row.countryId ?? "",
 
+          cutoff_label: row.cutoff_label ?? "",
           cutoff_mx_label: row.cutoff_mx_label ?? "",
           cutoff_mx_datetime: row.cutoff_mx_datetime ?? ""
         };
@@ -435,7 +451,7 @@ tbody tr:hover {
     };
   }
 
-  function buildMxTotal(rows, currentDate, lastWeekDate) {
+  function buildCountryTotal(rows, currentDate, lastWeekDate, countryLabel) {
     const curRows = rows.filter(r => r.fecha === currentDate);
     const lwRows = rows.filter(r => r.fecha === lastWeekDate);
 
@@ -480,8 +496,8 @@ tbody tr:hover {
     const cetaLastWeek = completedLastWeek > 0 ? cetaLastWeekNum / completedLastWeek : NaN;
 
     return {
-      cityId: "MX_TOTAL",
-      city_name: "MX Total",
+      cityId: `${countryLabel}_TOTAL`,
+      city_name: `${countryLabel} Total`,
 
       paid_current: paidCurrent,
       paid_last_week: paidLastWeek,
@@ -530,11 +546,13 @@ tbody tr:hover {
       .sort((a, b) => b.paid_current - a.paid_current)
       .slice(0, TOP_N);
 
-    const total = buildMxTotal(rows, currentDate, lastWeekDate);
+    const countryLabel = getCountryLabelFromRows(rows);
+    const total = buildCountryTotal(rows, currentDate, lastWeekDate, countryLabel);
 
     return {
         currentDate,
         lastWeekDate,
+        countryLabel,
         cutoffLabel: getCutoffLabelFromRows(rows),
         rows: [total, ...cityMetrics]
     };
@@ -548,7 +566,7 @@ tbody tr:hover {
     const rows = scorecard.rows;
 
     const htmlRows = rows.map(row => {
-      const isTotal = row.city_name === "MX Total";
+      const isTotal = row.cityId === `${scorecard.countryLabel}_TOTAL`;
 
       return `
         <tr class="${isTotal ? "total-row" : ""}">
@@ -622,12 +640,13 @@ tbody tr:hover {
     const lastWeekLabel = formatDateLabel(scorecard.lastWeekDate);
     const cutoffLabel = scorecard.cutoffLabel;
 
-    document.getElementById("title").textContent = `City Current Status | Cutoff MX: ${cutoffLabel}`;
+    document.getElementById("title").textContent =
+      `City Current Status | Cutoff ${scorecard.countryLabel}: ${cutoffLabel}`;
     document.getElementById("subtitle").textContent =
       `Weekly city comparison — Last Week (${lastWeekLabel}) vs Today (${currentLabel})`;
 
     document.getElementById("footer-left").textContent =
-      `MX Total includes all cities. Top ${TOP_N} city rows ranked by Paid Orders Today.`;
+      `${scorecard.countryLabel} Total includes all cities. Top ${TOP_N} city rows ranked by Paid Orders Today.`;
   }
 
   function renderError(message) {
