@@ -314,12 +314,12 @@ tbody tr:hover {
     // Current CSV versions use cutoff_label.
     // Older CSV versions used cutoff_mx_label.
     const rowWithCutoff = rows.find(row => {
-      const cutoffLabel = row.cutoff_label ?? row.cutoff_mx_label;
+      const cutoffLabel = row.cutoff_label ?? row.cutoff_mx_label ?? row.cutoff_co_label;
       return cutoffLabel && String(cutoffLabel).trim() !== "";
     });
 
     if (rowWithCutoff) {
-      return String(rowWithCutoff.cutoff_label ?? rowWithCutoff.cutoff_mx_label).trim();
+      return String(rowWithCutoff.cutoff_label ?? rowWithCutoff.cutoff_mx_label ?? rowWithCutoff.cutoff_co_label).trim();
     }
 
     const params = new URLSearchParams(window.location.search);
@@ -359,7 +359,9 @@ tbody tr:hover {
 
           cutoff_label: row.cutoff_label ?? "",
           cutoff_mx_label: row.cutoff_mx_label ?? "",
-          cutoff_mx_datetime: row.cutoff_mx_datetime ?? ""
+          cutoff_co_label: row.cutoff_co_label ?? "",
+          cutoff_mx_datetime: row.cutoff_mx_datetime ?? "",
+          cutoff_co_datetime: row.cutoff_co_datetime ?? ""
         };
       });
   }
